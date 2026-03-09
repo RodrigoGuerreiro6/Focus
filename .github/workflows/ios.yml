@@ -1,0 +1,76 @@
+name: Build iOS IPA
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-14
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Capacitor CLI
+        run: npm install -g @capacitor/cli
+
+      - name: Add iOS platform
+        run: npx cap add ios || true
+
+      - name: Sync web assets
+        run: npx cap sync ios
+
+      - name: Install CocoaPods
+        run: cd ios/App && pod install
+
+      - name: Update Info.plist
+        run: |
+          cd ios/App/App
+          /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.focus.app" Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Focus" Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleName Focus" Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.0" Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 1" Info.plist
+
+      - name: Build app (unsigned)
+        run: |
+          cd ios/App
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build/DerivedData \
+            PRODUCT_BUNDLE_IDENTIFIER=com.focus.app \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package IPA
+        run: |
+          cd ios/App
+          APP=$(find build/DerivedData/Build -name "*.app" -not -path "*iphonesimulator*" | head -1)
+          echo "Found: $APP"
+          mkdir -p build/Payload
+          cp -r "$APP" build/Payload/App.app
+          cd build && zip -r Focus.ipa Payload/
+          echo "IPA: $(du -sh Focus.ipa)"
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Focus-IPA
+          path: ios/App/build/Focus.ipa
+          retention-days: 30
