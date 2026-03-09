@@ -1,0 +1,55 @@
+workflows:
+  ios-unsigned:
+    name: Focus iOS Unsigned IPA
+    max_build_duration: 60
+    environment:
+      xcode: 15.2
+      node: 18
+
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          npm install
+
+      - name: Install Capacitor iOS platform
+        script: |
+          npx cap add ios 2>/dev/null || true
+          npx cap sync ios
+
+      - name: Update bundle ID and app name
+        script: |
+          cd ios/App
+          /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.focus.app" App/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Focus" App/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleName Focus" App/Info.plist
+
+      - name: Build app bundle
+        script: |
+          cd ios/App
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build/DerivedData \
+            PRODUCT_BUNDLE_IDENTIFIER=com.focus.app \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package into IPA
+        script: |
+          cd ios/App
+          APP_PATH=$(find build/DerivedData -name "*.app" -not -path "*/intermediates/*" | head -1)
+          echo "Found .app at: $APP_PATH"
+
+          mkdir -p build/Payload
+          cp -r "$APP_PATH" build/Payload/App.app
+
+          cd build
+          zip -r Focus.ipa Payload/
+          ls -lh Focus.ipa
+
+    artifacts:
+      - ios/App/build/Focus.ipa

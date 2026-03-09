@@ -1,0 +1,22 @@
+{
+  "appId": "com.focus.app",
+  "appName": "Focus",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "ios": {
+    "contentInset": "always",
+    "allowsLinkPreview": false,
+    "scrollEnabled": false
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "dark",
+      "backgroundColor": "#1c1c1e"
+    },
+    "SplashScreen": {
+      "launchShowDuration": 500,
+      "backgroundColor": "#1c1c1e",
+      "showSpinner": false
+    }
+  }
+}

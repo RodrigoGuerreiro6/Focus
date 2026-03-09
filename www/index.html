@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Focus</title>
+  <style>
+    * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: #1c1c1e; min-height: 100vh; overscroll-behavior: none; }
+    #root {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    }
+    #splash {
+      position: fixed; inset: 0; background: #1c1c1e;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999; transition: opacity 0.4s;
+    }
+    #splash.hidden { opacity: 0; pointer-events: none; }
+    #splash-text {
+      font-size: 11px; letter-spacing: 0.35em; color: #333;
+      font-family: -apple-system, sans-serif; text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div id="splash"><div id="splash-text">Focus</div></div>
+  <div id="root"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+
+  <script>
+    fetch('/app.jsx')
+      .then(r => r.text())
+      .then(src => {
+        const transformed = Babel.transform(src, { presets: ['react'] }).code;
+        const script = document.createElement('script');
+        script.textContent = transformed;
+        document.head.appendChild(script);
+      })
+      .then(() => {
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(window.FocusApp));
+        document.getElementById('splash').classList.add('hidden');
+      })
+      .catch(err => {
+        document.getElementById('splash-text').style.color = '#cc4444';
+        document.getElementById('splash-text').textContent = 'Erro: ' + err.message;
+      });
+  </script>
+</body>
+</html>
